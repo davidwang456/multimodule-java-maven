@@ -263,6 +263,11 @@ docker system prune -a
 - **Release版本**: 稳定版本，手动发布
 - **标签版本**: 特定版本，用于生产环境
 
+### Maven默认行为
+- **版本号以`-SNAPSHOT`结尾**: 自动部署到`snapshotRepository`
+- **版本号不以`-SNAPSHOT`结尾**: 自动部署到`repository`
+- **无需手动指定仓库**: Maven根据版本号自动选择正确的仓库
+
 ## 扩展功能
 
 ### 添加代码质量检查

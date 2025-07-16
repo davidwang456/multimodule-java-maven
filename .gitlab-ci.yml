@@ -130,24 +130,16 @@ deploy_to_maven_repository:
   script:
     # 根据分支或标签决定部署到哪个仓库
     - |
-      if [ "$CI_COMMIT_TAG" != "" ]; then
+      if [ "$CI_COMMIT_TAG" != "" ] || [ "$CI_COMMIT_REF_NAME" = "main" ]; then
         echo "部署Release版本到私有仓库..."
-        mvn clean deploy -DskipTests \
-          -DaltDeploymentRepository=releases::default::$MAVEN_REPOSITORY_URL \
-          -Dmaven.deploy.skip=false \
-          $MAVEN_CLI_OPTS
-      elif [ "$CI_COMMIT_REF_NAME" = "main" ]; then
-        echo "部署Release版本到私有仓库..."
-        mvn clean deploy -DskipTests \
-          -DaltDeploymentRepository=releases::default::$MAVEN_REPOSITORY_URL \
-          -Dmaven.deploy.skip=false \
-          $MAVEN_CLI_OPTS
+        # 确保版本是Release版本（移除-SNAPSHOT后缀）
+        mvn versions:set -DremoveSnapshot=true -DnewVersion=${CI_COMMIT_TAG:-1.0.0} $MAVEN_CLI_OPTS
+        mvn clean deploy -DskipTests $MAVEN_CLI_OPTS
       else
         echo "部署SNAPSHOT版本到私有仓库..."
-        mvn clean deploy -DskipTests \
-          -DaltDeploymentRepository=snapshots::default::$MAVEN_SNAPSHOT_URL \
-          -Dmaven.deploy.skip=false \
-          $MAVEN_CLI_OPTS
+        # 确保版本是SNAPSHOT版本
+        mvn versions:set -DnewVersion=1.0.0-SNAPSHOT $MAVEN_CLI_OPTS
+        mvn clean deploy -DskipTests $MAVEN_CLI_OPTS
       fi
   artifacts:
     paths:
