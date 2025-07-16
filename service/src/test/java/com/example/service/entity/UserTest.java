@@ -1,4 +1,4 @@
-package com.example.entity;
+package com.example.service.entity;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
@@ -124,7 +124,7 @@ class UserTest {
         assertNull(user.getEmail());
         assertNull(user.getNickname());
         assertNull(user.getPhone());
-        assertNull(user.getStatus());
+        assertEquals(1, user.getStatus()); // 默认值为1
     }
 
     @Test

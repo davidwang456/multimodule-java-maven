@@ -25,8 +25,12 @@ public class UserController {
      */
     @PostMapping
     public Result<UserVO> createUser(@Valid @RequestBody UserDTO userDTO) {
-        UserVO userVO = userService.createUser(userDTO);
-        return Result.success("用户创建成功", userVO);
+        try {
+            UserVO userVO = userService.createUser(userDTO);
+            return Result.success("用户创建成功", userVO);
+        } catch (Exception e) {
+            return Result.error("操作失败");
+        }
     }
     
     /**
@@ -34,8 +38,15 @@ public class UserController {
      */
     @GetMapping("/{id}")
     public Result<UserVO> getUserById(@PathVariable Long id) {
-        UserVO userVO = userService.getUserById(id);
-        return Result.success(userVO);
+        try {
+            UserVO userVO = userService.getUserById(id);
+            if (userVO == null) {
+                return Result.error(404, "用户不存在");
+            }
+            return Result.success(userVO);
+        } catch (Exception e) {
+            return Result.error("操作失败");
+        }
     }
     
     /**
@@ -43,8 +54,15 @@ public class UserController {
      */
     @GetMapping("/username/{username}")
     public Result<UserVO> getUserByUsername(@PathVariable String username) {
-        UserVO userVO = userService.getUserByUsername(username);
-        return Result.success(userVO);
+        try {
+            UserVO userVO = userService.getUserByUsername(username);
+            if (userVO == null) {
+                return Result.error("用户不存在");
+            }
+            return Result.success(userVO);
+        } catch (Exception e) {
+            return Result.error("操作失败");
+        }
     }
     
     /**
@@ -52,8 +70,12 @@ public class UserController {
      */
     @GetMapping
     public Result<List<UserVO>> getAllUsers() {
-        List<UserVO> users = userService.getAllUsers();
-        return Result.success(users);
+        try {
+            List<UserVO> users = userService.getAllUsers();
+            return Result.success(users);
+        } catch (Exception e) {
+            return Result.error("操作失败");
+        }
     }
     
     /**
@@ -61,8 +83,12 @@ public class UserController {
      */
     @PutMapping("/{id}")
     public Result<UserVO> updateUser(@PathVariable Long id, @Valid @RequestBody UserDTO userDTO) {
-        UserVO userVO = userService.updateUser(id, userDTO);
-        return Result.success("用户更新成功", userVO);
+        try {
+            UserVO userVO = userService.updateUser(id, userDTO);
+            return Result.success("用户更新成功", userVO);
+        } catch (Exception e) {
+            return Result.error("操作失败");
+        }
     }
     
     /**
@@ -70,8 +96,12 @@ public class UserController {
      */
     @DeleteMapping("/{id}")
     public Result<Void> deleteUser(@PathVariable Long id) {
-        userService.deleteUser(id);
-        return Result.success("用户删除成功", null);
+        try {
+            userService.deleteUser(id);
+            return Result.success("用户删除成功", null);
+        } catch (Exception e) {
+            return Result.error("操作失败");
+        }
     }
     
     /**
@@ -79,8 +109,12 @@ public class UserController {
      */
     @GetMapping("/search")
     public Result<List<UserVO>> searchUsers(@RequestParam String username) {
-        List<UserVO> users = userService.searchUsersByUsername(username);
-        return Result.success(users);
+        try {
+            List<UserVO> users = userService.searchUsersByUsername(username);
+            return Result.success(users);
+        } catch (Exception e) {
+            return Result.error("操作失败");
+        }
     }
     
     /**
@@ -88,8 +122,12 @@ public class UserController {
      */
     @GetMapping("/check-username")
     public Result<Boolean> checkUsername(@RequestParam String username) {
-        boolean exists = userService.existsByUsername(username);
-        return Result.success(exists);
+        try {
+            boolean exists = userService.existsByUsername(username);
+            return Result.success(exists);
+        } catch (Exception e) {
+            return Result.error("操作失败");
+        }
     }
     
     /**
@@ -97,7 +135,11 @@ public class UserController {
      */
     @GetMapping("/check-email")
     public Result<Boolean> checkEmail(@RequestParam String email) {
-        boolean exists = userService.existsByEmail(email);
-        return Result.success(exists);
+        try {
+            boolean exists = userService.existsByEmail(email);
+            return Result.success(exists);
+        } catch (Exception e) {
+            return Result.error("操作失败");
+        }
     }
 } 

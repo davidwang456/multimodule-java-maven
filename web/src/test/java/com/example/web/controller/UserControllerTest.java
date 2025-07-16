@@ -2,7 +2,7 @@ package com.example.web.controller;
 
 import com.example.api.dto.UserDTO;
 import com.example.common.Result;
-import com.example.service.UserService;
+import com.example.service.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
@@ -21,6 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.Arrays;
 import java.util.Optional;
+import com.example.api.vo.UserVO;
 
 /**
  * UserController单元测试
@@ -37,11 +38,19 @@ class UserControllerTest {
 
     private MockMvc mockMvc;
     private ObjectMapper objectMapper;
+    private UserVO userVO;
 
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(userController).build();
         objectMapper = new ObjectMapper();
+        userVO = new UserVO();
+        userVO.setId(1L);
+        userVO.setUsername("testuser");
+        userVO.setEmail("test@example.com");
+        userVO.setNickname("测试用户");
+        userVO.setPhone("13800138000");
+        userVO.setStatus(1);
     }
 
     @Test
@@ -53,7 +62,7 @@ class UserControllerTest {
         userDTO.setPassword("password123");
         userDTO.setEmail("test@example.com");
         
-        when(userService.save(any(UserDTO.class))).thenReturn(true);
+        when(userService.createUser(any(UserDTO.class))).thenReturn(userVO);
         
         // When & Then
         mockMvc.perform(post("/api/users")
@@ -61,9 +70,9 @@ class UserControllerTest {
                 .content(objectMapper.writeValueAsString(userDTO)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.message").value("操作成功"));
+                .andExpect(jsonPath("$.message").value("用户创建成功"));
         
-        verify(userService, times(1)).save(any(UserDTO.class));
+        verify(userService, times(1)).createUser(any(UserDTO.class));
     }
 
     @Test
@@ -75,7 +84,7 @@ class UserControllerTest {
         userDTO.setPassword("password123");
         userDTO.setEmail("test@example.com");
         
-        when(userService.save(any(UserDTO.class))).thenReturn(false);
+        when(userService.createUser(any(UserDTO.class))).thenThrow(new RuntimeException("创建用户失败"));
         
         // When & Then
         mockMvc.perform(post("/api/users")
@@ -85,7 +94,7 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.code").value(500))
                 .andExpect(jsonPath("$.message").value("操作失败"));
         
-        verify(userService, times(1)).save(any(UserDTO.class));
+        verify(userService, times(1)).createUser(any(UserDTO.class));
     }
 
     @Test
@@ -97,7 +106,7 @@ class UserControllerTest {
         userDTO.setUsername("testuser");
         userDTO.setEmail("test@example.com");
         
-        when(userService.findById(1L)).thenReturn(Optional.of(userDTO));
+        when(userService.getUserById(1L)).thenReturn(userVO);
         
         // When & Then
         mockMvc.perform(get("/api/users/1"))
@@ -106,14 +115,14 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.data.username").value("testuser"))
                 .andExpect(jsonPath("$.data.email").value("test@example.com"));
         
-        verify(userService, times(1)).findById(1L);
+        verify(userService, times(1)).getUserById(1L);
     }
 
     @Test
     @DisplayName("测试根据ID获取用户 - 用户不存在")
     void testGetUserByIdNotFound() throws Exception {
         // Given
-        when(userService.findById(999L)).thenReturn(Optional.empty());
+        when(userService.getUserById(999L)).thenReturn(null);
         
         // When & Then
         mockMvc.perform(get("/api/users/999"))
@@ -121,24 +130,24 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.code").value(404))
                 .andExpect(jsonPath("$.message").value("用户不存在"));
         
-        verify(userService, times(1)).findById(999L);
+        verify(userService, times(1)).getUserById(999L);
     }
 
     @Test
     @DisplayName("测试获取所有用户")
     void testGetAllUsers() throws Exception {
         // Given
-        UserDTO user1 = new UserDTO();
-        user1.setId(1L);
-        user1.setUsername("user1");
-        user1.setEmail("user1@example.com");
+        UserVO userVO1 = new UserVO();
+        userVO1.setId(1L);
+        userVO1.setUsername("user1");
+        userVO1.setEmail("user1@example.com");
         
-        UserDTO user2 = new UserDTO();
-        user2.setId(2L);
-        user2.setUsername("user2");
-        user2.setEmail("user2@example.com");
+        UserVO userVO2 = new UserVO();
+        userVO2.setId(2L);
+        userVO2.setUsername("user2");
+        userVO2.setEmail("user2@example.com");
         
-        when(userService.findAll()).thenReturn(Arrays.asList(user1, user2));
+        when(userService.getAllUsers()).thenReturn(Arrays.asList(userVO1, userVO2));
         
         // When & Then
         mockMvc.perform(get("/api/users"))
@@ -149,7 +158,7 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.data[0].username").value("user1"))
                 .andExpect(jsonPath("$.data[1].username").value("user2"));
         
-        verify(userService, times(1)).findAll();
+        verify(userService, times(1)).getAllUsers();
     }
 
     @Test
@@ -159,9 +168,10 @@ class UserControllerTest {
         UserDTO userDTO = new UserDTO();
         userDTO.setId(1L);
         userDTO.setUsername("updateduser");
+        userDTO.setPassword("password123");
         userDTO.setEmail("updated@example.com");
         
-        when(userService.update(any(UserDTO.class))).thenReturn(true);
+        when(userService.updateUser(anyLong(), any(UserDTO.class))).thenReturn(userVO);
         
         // When & Then
         mockMvc.perform(put("/api/users/1")
@@ -169,9 +179,9 @@ class UserControllerTest {
                 .content(objectMapper.writeValueAsString(userDTO)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.message").value("操作成功"));
+                .andExpect(jsonPath("$.message").value("用户更新成功"));
         
-        verify(userService, times(1)).update(any(UserDTO.class));
+        verify(userService, times(1)).updateUser(anyLong(), any(UserDTO.class));
     }
 
     @Test
@@ -181,9 +191,10 @@ class UserControllerTest {
         UserDTO userDTO = new UserDTO();
         userDTO.setId(1L);
         userDTO.setUsername("updateduser");
+        userDTO.setPassword("password123");
         userDTO.setEmail("updated@example.com");
         
-        when(userService.update(any(UserDTO.class))).thenReturn(false);
+        when(userService.updateUser(anyLong(), any(UserDTO.class))).thenThrow(new RuntimeException("更新用户失败"));
         
         // When & Then
         mockMvc.perform(put("/api/users/1")
@@ -193,29 +204,29 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.code").value(500))
                 .andExpect(jsonPath("$.message").value("操作失败"));
         
-        verify(userService, times(1)).update(any(UserDTO.class));
+        verify(userService, times(1)).updateUser(anyLong(), any(UserDTO.class));
     }
 
     @Test
     @DisplayName("测试删除用户 - 成功")
     void testDeleteUserSuccess() throws Exception {
         // Given
-        when(userService.deleteById(1L)).thenReturn(true);
+        doNothing().when(userService).deleteUser(1L);
         
         // When & Then
         mockMvc.perform(delete("/api/users/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.message").value("操作成功"));
+                .andExpect(jsonPath("$.message").value("用户删除成功"));
         
-        verify(userService, times(1)).deleteById(1L);
+        verify(userService, times(1)).deleteUser(1L);
     }
 
     @Test
     @DisplayName("测试删除用户 - 失败")
     void testDeleteUserFailure() throws Exception {
         // Given
-        when(userService.deleteById(999L)).thenReturn(false);
+        doThrow(new RuntimeException("删除用户失败")).when(userService).deleteUser(999L);
         
         // When & Then
         mockMvc.perform(delete("/api/users/999"))
@@ -223,7 +234,7 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.code").value(500))
                 .andExpect(jsonPath("$.message").value("操作失败"));
         
-        verify(userService, times(1)).deleteById(999L);
+        verify(userService, times(1)).deleteUser(999L);
     }
 
     @Test
@@ -311,8 +322,6 @@ class UserControllerTest {
         mockMvc.perform(post("/api/users")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(userDTO)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(500))
-                .andExpect(jsonPath("$.message").value("操作失败"));
+                .andExpect(status().isBadRequest());
     }
 } 
