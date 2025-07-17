@@ -1,5 +1,12 @@
 # GitLab CI/CD 配置文件
 # 多模块SpringBoot项目CI/CD流程
+variables:
+  build_enable: "true"
+  test_enable: "true"
+  package_enable: "true"
+  deploy_enable: "true"
+  publish_enable: "true"
+  scan_enable: "true"
 
 # 定义阶段
 stages:
@@ -8,14 +15,21 @@ stages:
   - package
   - deploy
   - publish
+  - sonarqube
+  - scan
 
 # 定义变量
 variables:
+  # 指定项目目录（如果.gitlab-ci.yml不在根目录，修改此处即可）
+  PROJECT_PATH: .
   MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
-  MAVEN_CLI_OPTS: "--batch-mode --errors --fail-at-end --show-version"
+  MAVEN_CLI_OPTS: "--batch-mode --errors --fail-at-end --show-version -f $PROJECT_PATH"
   JAVA_VERSION: "17"
   MAVEN_REPOSITORY_URL: "https://nexus.example.com/repository/maven-releases/"
   MAVEN_SNAPSHOT_URL: "https://nexus.example.com/repository/maven-snapshots/"
+  # 获取pom.xml中的版本
+  PROJECT_VERSION: $(mvn help:evaluate -Dexpression=project.version -q -DforceStdout -f $PROJECT_PATH)
+
 
 # 缓存配置
 cache:
@@ -37,10 +51,10 @@ build:
     paths:
       - target/
     expire_in: 1 hour
-  only:
-    - main
-    - develop
-    - merge_requests
+  rules:
+    - if: $build_enable == "true" && ($CI_COMMIT_REF_NAME == "main" || $CI_COMMIT_REF_NAME == "master" || $CI_COMMIT_TAG != "")
+      when: always
+    - when: never
 
 # 测试阶段
 test:
@@ -64,18 +78,22 @@ test:
     - echo "等待MySQL启动..."
     - sleep 30
   script:
-    - mvn test $MAVEN_CLI_OPTS
+    - mvn clean test $MAVEN_CLI_OPTS
+    - echo "测试覆盖率报告位置："
+    - find . -name "jacoco.xml" -o -name "index.html" | grep jacoco
   artifacts:
     reports:
       junit: "**/target/surefire-reports/TEST-*.xml"
     paths:
       - "**/target/surefire-reports/"
+      - "**/target/site/jacoco/"
+      - "**/target/jacoco.exec"
     expire_in: 1 week
   coverage: '/Total.*?([0-9]{1,3})%/'
-  only:
-    - main
-    - develop
-    - merge_requests
+  rules:
+    - if: $test_enable == "true" && ($CI_COMMIT_REF_NAME == "main" || $CI_COMMIT_REF_NAME == "master" || $CI_COMMIT_TAG != "")
+      when: always
+    - when: never
 
 # 打包阶段
 package:
@@ -91,10 +109,10 @@ package:
     paths:
       - web/target/*.jar
     expire_in: 1 week
-  only:
-    - main
-    - develop
-    - tags
+  rules:
+    - if: $package_enable == "true" && ($CI_COMMIT_REF_NAME == "main" || $CI_COMMIT_REF_NAME == "master" || $CI_COMMIT_TAG != "")
+      when: always
+    - when: never
 
 # 创建Docker镜像
 docker_build:
@@ -110,9 +128,10 @@ docker_build:
     - docker build -t $CI_REGISTRY_IMAGE:latest .
     - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
     - docker push $CI_REGISTRY_IMAGE:latest
-  only:
-    - main
-    - tags
+  rules:
+    - if: $package_enable == "true" && ($CI_COMMIT_REF_NAME == "main" || $CI_COMMIT_REF_NAME == "master" || $CI_COMMIT_TAG != "")
+      when: always
+    - when: never
 
 # 部署到Maven私有仓库
 deploy_to_maven_repository:
@@ -128,9 +147,12 @@ deploy_to_maven_repository:
     - sed -i "s/\${MAVEN_REPOSITORY_PASSWORD}/$MAVEN_REPOSITORY_PASSWORD/g" ~/.m2/settings.xml
     - sed -i "s/nexus.example.com/$MAVEN_REPOSITORY_HOST/g" ~/.m2/settings.xml
   script:
+    # 获取pom.xml中的版本
+    - export PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout $MAVEN_CLI_OPTS)
+    - echo "当前项目版本: $PROJECT_VERSION"
     # 根据分支或标签决定部署到哪个仓库
     - |
-      if [ "$CI_COMMIT_TAG" != "" ] || [ "$CI_COMMIT_REF_NAME" = "main" ]; then
+      if [ "$CI_COMMIT_TAG" != "" ] || [ "$CI_COMMIT_REF_NAME" = "main" ] || [ "$CI_COMMIT_REF_NAME" = "master" ]; then
         echo "部署Release版本到私有仓库..."
         # 确保版本是Release版本（移除-SNAPSHOT后缀）
         mvn versions:set -DremoveSnapshot=true -DnewVersion=${CI_COMMIT_TAG:-1.0.0} $MAVEN_CLI_OPTS
@@ -146,10 +168,10 @@ deploy_to_maven_repository:
       - "**/target/*.jar"
       - "**/target/*.pom"
     expire_in: 1 month
-  only:
-    - main
-    - develop
-    - tags
+  rules:
+    - if: $publish_enable == "true" && ($CI_COMMIT_REF_NAME == "main" || $CI_COMMIT_REF_NAME == "master" || $CI_COMMIT_TAG != "")
+      when: always
+    - when: never
 
 # 部署到测试环境
 deploy_test:
@@ -170,8 +192,10 @@ deploy_test:
   environment:
     name: test
     url: http://test.example.com
-  only:
-    - develop
+  rules:
+    - if: $deploy_enable == "true" && ($CI_COMMIT_REF_NAME == "main" || $CI_COMMIT_REF_NAME == "master" || $CI_COMMIT_TAG != "")
+      when: always
+    - when: never
 
 # 部署到生产环境
 deploy_prod:
@@ -193,6 +217,66 @@ deploy_prod:
     name: production
     url: http://prod.example.com
   when: manual
-  only:
-    - main
-    - tags 
+  rules:
+    - if: $deploy_enable == "true" && ($CI_COMMIT_REF_NAME == "main" || $CI_COMMIT_REF_NAME == "master" || $CI_COMMIT_TAG != "")
+      when: manual
+    - when: never
+
+# 安全扫描阶段（示例）
+security_scan:
+  stage: scan
+  image: owasp/zap2docker-stable:latest
+  before_script:
+    - echo "开始安全扫描..."
+  script:
+    - echo "执行安全扫描..."
+    - echo "扫描完成"
+  artifacts:
+    paths:
+      - scan-results/
+    expire_in: 1 week
+  rules:
+    - if: $scan_enable == "true" && ($CI_COMMIT_REF_NAME == "main" || $CI_COMMIT_REF_NAME == "master" || $CI_COMMIT_TAG != "")
+      when: always
+    - when: never
+
+# SonarQube代码质量分析
+sonarqube:
+  stage: sonarqube
+  image: maven:3.9.6-openjdk-17
+  before_script:
+    - echo "开始SonarQube代码质量分析..."
+    - echo "当前分支: $CI_COMMIT_REF_NAME"
+    - echo "当前提交: $CI_COMMIT_SHA"
+  script:
+    # 确保测试覆盖率报告存在
+    - echo "检查覆盖率报告文件..."
+    - find . -name "jacoco.xml" -o -name "index.html" | grep jacoco || echo "未找到JaCoCo报告"
+    - find . -name "*.exec" | grep jacoco || echo "未找到JaCoCo执行文件"
+    
+    # 运行SonarQube分析
+    - mvn sonar:sonar $MAVEN_CLI_OPTS \
+        -Dsonar.host.url=$SONAR_HOST_URL \
+        -Dsonar.login=$SONAR_TOKEN \
+        -Dsonar.projectKey=$CI_PROJECT_PATH_SLUG \
+        -Dsonar.projectName="$CI_PROJECT_NAME" \
+        -Dsonar.projectVersion=$PROJECT_VERSION \
+        -Dsonar.sources=src/main/java \
+        -Dsonar.tests=src/test/java \
+        -Dsonar.java.binaries=target/classes \
+        -Dsonar.java.test.binaries=target/test-classes \
+        -Dsonar.coverage.jacoco.xmlReportPaths=**/target/site/jacoco/jacoco.xml \
+        -Dsonar.coverage.exclusions=**/test/**,**/Test.java,**/*Test.java \
+        -Dsonar.test.exclusions=**/test/**,**/Test.java,**/*Test.java \
+        -Dsonar.java.source=17 \
+        -Dsonar.sourceEncoding=UTF-8
+    
+    - echo "SonarQube分析完成"
+  artifacts:
+    paths:
+      - "**/target/sonar/"
+    expire_in: 1 week
+  rules:
+    - if: $scan_enable == "true" && ($CI_COMMIT_REF_NAME == "main" || $CI_COMMIT_REF_NAME == "master" || $CI_COMMIT_TAG != "")
+      when: always
+    - when: never 

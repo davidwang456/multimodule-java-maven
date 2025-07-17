@@ -44,21 +44,25 @@ multi-springboot/
 ## 模块说明
 
 ### common模块
+
 - 包含通用工具类、常量、异常等
 - 提供统一的返回结果类 `Result`
 - 定义业务异常类 `BusinessException`
 
 ### api模块
+
 - 包含数据传输对象（DTO）和视图对象（VO）
 - 定义API接口的数据结构
 - 依赖common模块
 
 ### service模块
+
 - 包含业务逻辑和数据处理
 - 定义实体类、Repository、Service接口和实现
 - 依赖common和api模块
 
 ### web模块
+
 - 包含控制器和启动类
 - 提供RESTful API接口
 - 依赖所有其他模块
@@ -75,17 +79,21 @@ multi-springboot/
 ## 快速开始
 
 ### 1. 环境要求
+
 - JDK 17+
 - Maven 3.6+
 - MySQL 8.0+
 
 ### 2. 数据库配置
+
 创建数据库：
+
 ```sql
 CREATE DATABASE multi_springboot CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
 修改 `web/src/main/resources/application.yml` 中的数据库连接信息：
+
 ```yaml
 spring:
   datasource:
@@ -95,6 +103,7 @@ spring:
 ```
 
 ### 3. 编译运行
+
 ```bash
 # 编译整个项目
 mvn clean compile
@@ -108,6 +117,7 @@ mvn spring-boot:run
 ```
 
 ### 4. 访问API
+
 项目启动后，可以通过以下URL访问API：
 
 - 创建用户: `POST http://localhost:8080/api/users`
@@ -120,6 +130,7 @@ mvn spring-boot:run
 ## API示例
 
 ### 创建用户
+
 ```bash
 curl -X POST http://localhost:8080/api/users \
   -H "Content-Type: application/json" \
@@ -133,6 +144,7 @@ curl -X POST http://localhost:8080/api/users \
 ```
 
 ### 获取所有用户
+
 ```bash
 curl -X GET http://localhost:8080/api/users
 ```

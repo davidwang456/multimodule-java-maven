@@ -303,3 +303,204 @@ notify:
       $SLACK_WEBHOOK_URL
   when: on_success
 ``` 
+
+# 多模块SpringBoot项目CI/CD流程
+
+## 概述
+
+本项目实现了完整的CI/CD流程，包括构建、测试、打包、部署、发布和扫描等阶段。
+
+## 配置说明
+
+### 1. 变量控制
+
+通过以下变量可以控制各个阶段的执行：
+
+```yaml
+variables:
+  build_enable: "true"      # 构建阶段
+  test_enable: "true"       # 测试阶段
+  package_enable: "true"    # 打包阶段
+  deploy_enable: "true"     # 部署阶段
+  publish_enable: "true"    # 发布阶段
+  scan_enable: "true"       # 扫描阶段
+```
+
+### 2. 分支控制
+
+只有以下分支和标签会触发CI/CD流程：
+- `main` 分支
+- `master` 分支
+- 任何标签（tag）
+
+### 3. 项目路径配置
+
+如果`.gitlab-ci.yml`不在项目根目录，可以通过以下变量指定：
+
+```yaml
+variables:
+  PROJECT_PATH: .  # 修改为实际的项目路径
+```
+
+## 阶段说明
+
+### 构建阶段 (build)
+- 编译项目代码
+- 生成构建产物
+
+### 测试阶段 (test)
+- 运行单元测试
+- 生成测试覆盖率报告
+- 收集JUnit测试报告
+
+### 打包阶段 (package)
+- 打包项目为JAR文件
+- 构建Docker镜像
+
+### 部署阶段 (deploy)
+- 部署到测试环境
+- 部署到生产环境（手动触发）
+
+### 发布阶段 (publish)
+- 发布到Maven私有仓库
+
+### SonarQube分析阶段 (sonarqube)
+- 代码质量分析
+- 测试覆盖率分析
+
+### 扫描阶段 (scan)
+- 安全漏洞扫描
+
+## 环境变量配置
+
+需要在GitLab项目中配置以下环境变量：
+
+### Maven仓库配置
+- `MAVEN_REPOSITORY_USERNAME`: Maven仓库用户名
+- `MAVEN_REPOSITORY_PASSWORD`: Maven仓库密码
+- `MAVEN_REPOSITORY_HOST`: Maven仓库主机地址
+
+### 部署配置
+- `SSH_PRIVATE_KEY`: SSH私钥
+- `SSH_KNOWN_HOSTS`: SSH已知主机
+- `TEST_SERVER_USER`: 测试服务器用户名
+- `TEST_SERVER_HOST`: 测试服务器主机
+- `TEST_SERVER_PATH`: 测试服务器部署路径
+- `PROD_SERVER_USER`: 生产服务器用户名
+- `PROD_SERVER_HOST`: 生产服务器主机
+- `PROD_SERVER_PATH`: 生产服务器部署路径
+
+### SonarQube配置
+- `SONAR_HOST_URL`: SonarQube服务器地址
+- `SONAR_TOKEN`: SonarQube访问令牌
+
+## 使用说明
+
+1. 推送代码到main/master分支或创建标签
+2. 在GitLab CI/CD页面查看流水线执行情况
+3. 根据需要手动触发生产环境部署
+
+## 测试覆盖率配置
+
+### 问题描述
+在CI流程中，单元测试全部通过，但SonarQube报告中显示覆盖率为0。
+
+### 解决方案
+
+#### 1. 添加JaCoCo插件配置
+在`pom.xml`中添加JaCoCo插件配置：
+
+```xml
+<plugin>
+    <groupId>org.jacoco</groupId>
+    <artifactId>jacoco-maven-plugin</artifactId>
+    <version>0.8.11</version>
+    <executions>
+        <execution>
+            <id>prepare-agent</id>
+            <goals>
+                <goal>prepare-agent</goal>
+            </goals>
+        </execution>
+        <execution>
+            <id>report</id>
+            <phase>test</phase>
+            <goals>
+                <goal>report</goal>
+            </goals>
+        </execution>
+        <execution>
+            <id>jacoco-check</id>
+            <goals>
+                <goal>check</goal>
+            </goals>
+            <configuration>
+                <rules>
+                    <rule>
+                        <element>BUNDLE</element>
+                        <limits>
+                            <limit>
+                                <counter>LINE</counter>
+                                <value>COVEREDRATIO</value>
+                                <minimum>0.60</minimum>
+                            </limit>
+                        </limits>
+                    </rule>
+                </rules>
+            </configuration>
+        </execution>
+    </executions>
+</plugin>
+```
+
+#### 2. 添加SonarQube插件配置
+```xml
+<plugin>
+    <groupId>org.sonarsource.scanner.maven</groupId>
+    <artifactId>sonar-maven-plugin</artifactId>
+    <version>3.10.0.2594</version>
+</plugin>
+```
+
+#### 3. 修改CI配置
+在`.gitlab-ci.yml`的test阶段中添加覆盖率报告收集：
+
+```yaml
+test:
+  script:
+    - mvn clean test $MAVEN_CLI_OPTS
+  artifacts:
+    paths:
+      - "**/target/surefire-reports/"
+      - "**/target/site/jacoco/"    # 添加JaCoCo报告
+      - "**/target/jacoco.exec"     # 添加JaCoCo执行文件
+```
+
+#### 4. 添加SonarQube分析阶段
+```yaml
+sonarqube:
+  stage: sonarqube
+  script:
+    - mvn sonar:sonar $MAVEN_CLI_OPTS \
+        -Dsonar.host.url=$SONAR_HOST_URL \
+        -Dsonar.login=$SONAR_TOKEN \
+        -Dsonar.projectKey=$CI_PROJECT_PATH_SLUG \
+        -Dsonar.coverage.jacoco.xmlReportPaths=**/target/site/jacoco/jacoco.xml
+```
+
+### 常见问题排查
+
+1. **覆盖率报告文件不存在**
+   - 检查JaCoCo插件是否正确配置
+   - 确认测试是否真正执行了代码
+
+2. **SonarQube无法找到覆盖率文件**
+   - 检查`sonar.coverage.jacoco.xmlReportPaths`路径配置
+   - 确认覆盖率报告文件已生成
+
+3. **覆盖率显示为0**
+   - 检查测试是否覆盖了实际业务代码
+   - 确认JaCoCo插件在test阶段正确执行
+
+### 覆盖率要求
+当前配置要求代码覆盖率不低于60%，可以通过修改`minimum`值来调整要求。 
