@@ -503,4 +503,98 @@ sonarqube:
    - 确认JaCoCo插件在test阶段正确执行
 
 ### 覆盖率要求
-当前配置要求代码覆盖率不低于60%，可以通过修改`minimum`值来调整要求。 
+当前配置要求代码覆盖率不低于60%，可以通过修改`minimum`值来调整要求。
+
+## Maven Profile配置
+
+### Profile配置说明
+
+项目提供了两种覆盖率管理方式：
+
+#### 1. **默认方式**（推荐）
+- 在每个模块的`pom.xml`中直接配置JaCoCo插件
+- 覆盖率检查在测试阶段自动执行
+- 如果覆盖率不达标，构建会失败
+
+#### 2. **Profile方式**（可选）
+- 通过Maven Profile管理JaCoCo配置
+- 更灵活的控制，可以选择是否启用覆盖率检查
+
+### Profile配置选项
+
+#### coverage Profile
+```bash
+# 启用覆盖率检查（60%要求）
+mvn clean test -Pcoverage
+
+# 运行SonarQube分析
+mvn sonar:sonar -Pcoverage
+```
+
+#### skip-coverage-check Profile
+```bash
+# 生成覆盖率报告但不检查阈值
+mvn clean test -Pcoverage,skip-coverage-check
+
+# 运行SonarQube分析
+mvn sonar:sonar -Pcoverage,skip-coverage-check
+```
+
+### CI/CD中的Profile使用
+
+在GitLab CI中可以通过变量控制Profile的使用：
+
+```yaml
+variables:
+  coverage_profile_enable: "true"   # 启用coverage profile
+  skip_coverage_check: "false"      # 是否跳过覆盖率检查
+```
+
+#### 使用场景
+
+1. **开发阶段**：`skip_coverage_check: "true"`
+   - 生成覆盖率报告但不强制要求
+   - 避免因覆盖率不足导致构建失败
+
+2. **发布阶段**：`skip_coverage_check: "false"`
+   - 严格检查覆盖率要求
+   - 确保代码质量
+
+3. **默认方式**：`coverage_profile_enable: "false"`
+   - 使用各模块中的JaCoCo配置
+   - 最稳定的配置方式
+
+### Profile配置位置
+
+Profile配置在父项目的`pom.xml`中：
+
+```xml
+<profiles>
+    <!-- 覆盖率Profile -->
+    <profile>
+        <id>coverage</id>
+        <activation>
+            <activeByDefault>false</activeByDefault>
+        </activation>
+        <build>
+            <pluginManagement>
+                <plugins>
+                    <!-- JaCoCo插件配置 -->
+                </plugins>
+            </pluginManagement>
+        </build>
+    </profile>
+    
+    <!-- 跳过覆盖率检查的Profile -->
+    <profile>
+        <id>skip-coverage-check</id>
+        <!-- 配置... -->
+    </profile>
+</profiles>
+```
+
+### 推荐使用方式
+
+- **生产环境**：使用默认方式（各模块直接配置）
+- **开发环境**：可以使用Profile方式，更灵活
+- **CI/CD**：根据分支类型选择不同的配置 

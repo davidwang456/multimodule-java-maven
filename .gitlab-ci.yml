@@ -7,6 +7,9 @@ variables:
   deploy_enable: "true"
   publish_enable: "true"
   scan_enable: "true"
+  # 覆盖率配置选项
+  coverage_profile_enable: "false"  # 是否使用coverage profile
+  skip_coverage_check: "false"      # 是否跳过覆盖率检查
 
 # 定义阶段
 stages:
@@ -78,7 +81,19 @@ test:
     - echo "等待MySQL启动..."
     - sleep 30
   script:
-    - mvn clean test $MAVEN_CLI_OPTS
+    # 根据配置选择是否使用coverage profile
+    - |
+      if [ "$coverage_profile_enable" = "true" ]; then
+        echo "使用coverage profile运行测试..."
+        if [ "$skip_coverage_check" = "true" ]; then
+          mvn clean test -Pcoverage,skip-coverage-check $MAVEN_CLI_OPTS
+        else
+          mvn clean test -Pcoverage $MAVEN_CLI_OPTS
+        fi
+      else
+        echo "使用默认配置运行测试..."
+        mvn clean test $MAVEN_CLI_OPTS
+      fi
     - echo "测试覆盖率报告位置："
     - find . -name "jacoco.xml" -o -name "index.html" | grep jacoco
   artifacts:
@@ -254,22 +269,43 @@ sonarqube:
     - find . -name "jacoco.xml" -o -name "index.html" | grep jacoco || echo "未找到JaCoCo报告"
     - find . -name "*.exec" | grep jacoco || echo "未找到JaCoCo执行文件"
     
-    # 运行SonarQube分析
-    - mvn sonar:sonar $MAVEN_CLI_OPTS \
-        -Dsonar.host.url=$SONAR_HOST_URL \
-        -Dsonar.login=$SONAR_TOKEN \
-        -Dsonar.projectKey=$CI_PROJECT_PATH_SLUG \
-        -Dsonar.projectName="$CI_PROJECT_NAME" \
-        -Dsonar.projectVersion=$PROJECT_VERSION \
-        -Dsonar.sources=src/main/java \
-        -Dsonar.tests=src/test/java \
-        -Dsonar.java.binaries=target/classes \
-        -Dsonar.java.test.binaries=target/test-classes \
-        -Dsonar.coverage.jacoco.xmlReportPaths=**/target/site/jacoco/jacoco.xml \
-        -Dsonar.coverage.exclusions=**/test/**,**/Test.java,**/*Test.java \
-        -Dsonar.test.exclusions=**/test/**,**/Test.java,**/*Test.java \
-        -Dsonar.java.source=17 \
-        -Dsonar.sourceEncoding=UTF-8
+    # 根据配置选择是否使用coverage profile运行SonarQube分析
+    - |
+      if [ "$coverage_profile_enable" = "true" ]; then
+        echo "使用coverage profile运行SonarQube分析..."
+        mvn sonar:sonar -Pcoverage $MAVEN_CLI_OPTS \
+          -Dsonar.host.url=$SONAR_HOST_URL \
+          -Dsonar.login=$SONAR_TOKEN \
+          -Dsonar.projectKey=$CI_PROJECT_PATH_SLUG \
+          -Dsonar.projectName="$CI_PROJECT_NAME" \
+          -Dsonar.projectVersion=$PROJECT_VERSION \
+          -Dsonar.sources=src/main/java \
+          -Dsonar.tests=src/test/java \
+          -Dsonar.java.binaries=target/classes \
+          -Dsonar.java.test.binaries=target/test-classes \
+          -Dsonar.coverage.jacoco.xmlReportPaths=**/target/site/jacoco/jacoco.xml \
+          -Dsonar.coverage.exclusions=**/test/**,**/Test.java,**/*Test.java \
+          -Dsonar.test.exclusions=**/test/**,**/Test.java,**/*Test.java \
+          -Dsonar.java.source=17 \
+          -Dsonar.sourceEncoding=UTF-8
+      else
+        echo "使用默认配置运行SonarQube分析..."
+        mvn sonar:sonar $MAVEN_CLI_OPTS \
+          -Dsonar.host.url=$SONAR_HOST_URL \
+          -Dsonar.login=$SONAR_TOKEN \
+          -Dsonar.projectKey=$CI_PROJECT_PATH_SLUG \
+          -Dsonar.projectName="$CI_PROJECT_NAME" \
+          -Dsonar.projectVersion=$PROJECT_VERSION \
+          -Dsonar.sources=src/main/java \
+          -Dsonar.tests=src/test/java \
+          -Dsonar.java.binaries=target/classes \
+          -Dsonar.java.test.binaries=target/test-classes \
+          -Dsonar.coverage.jacoco.xmlReportPaths=**/target/site/jacoco/jacoco.xml \
+          -Dsonar.coverage.exclusions=**/test/**,**/Test.java,**/*Test.java \
+          -Dsonar.test.exclusions=**/test/**,**/Test.java,**/*Test.java \
+          -Dsonar.java.source=17 \
+          -Dsonar.sourceEncoding=UTF-8
+      fi
     
     - echo "SonarQube分析完成"
   artifacts:
