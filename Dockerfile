@@ -1,6 +1,6 @@
 # 多阶段构建Dockerfile
 # 第一阶段：构建阶段
-FROM maven:3.9.6-openjdk-17 AS builder
+FROM maven:3.9.6-openjdk-8 AS builder
 
 # 设置工作目录
 WORKDIR /app
@@ -19,7 +19,7 @@ COPY . .
 RUN mvn clean package -DskipTests
 
 # 第二阶段：运行阶段
-FROM openjdk:17-jre-slim
+FROM openjdk:8-jre-slim
 
 # 设置工作目录
 WORKDIR /app

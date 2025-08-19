@@ -69,18 +69,18 @@ multi-springboot/
 
 ## 技术栈
 
-- **Spring Boot 3.2.0**: 主框架
+- **Spring Boot 2.7.18**: 主框架
 - **MyBatis-Plus 3.5.4.1**: 数据访问层
 - **MySQL 8.0.33**: 数据库
 - **Lombok**: 简化代码
 - **Maven**: 项目管理工具
-- **JDK 17**: Java开发环境
+- **JDK 8**: Java开发环境
 
 ## 快速开始
 
 ### 1. 环境要求
 
-- JDK 17+
+- JDK 8+
 - Maven 3.6+
 - MySQL 8.0+
 

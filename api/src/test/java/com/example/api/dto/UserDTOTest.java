@@ -3,9 +3,11 @@ package com.example.api.dto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.BeforeEach;
-import jakarta.validation.Validation;
-import jakarta.validation.Validator;
-import jakarta.validation.ValidatorFactory;
+import javax.validation.Validation;
+import javax.validation.Validator;
+import javax.validation.ValidatorFactory;
+import javax.validation.ConstraintViolation;
+import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -36,7 +38,7 @@ class UserDTOTest {
         userDTO.setStatus(1);
         
         // When
-        var violations = validator.validate(userDTO);
+        Set<ConstraintViolation<UserDTO>> violations = validator.validate(userDTO);
         
         // Then
         assertTrue(violations.isEmpty());
@@ -58,7 +60,7 @@ class UserDTOTest {
         userDTO.setEmail("test@example.com");
         
         // When
-        var violations = validator.validate(userDTO);
+        Set<ConstraintViolation<UserDTO>> violations = validator.validate(userDTO);
         
         // Then
         assertFalse(violations.isEmpty());
@@ -75,7 +77,7 @@ class UserDTOTest {
         userDTO.setEmail("test@example.com");
         
         // When
-        var violations = validator.validate(userDTO);
+        Set<ConstraintViolation<UserDTO>> violations = validator.validate(userDTO);
         
         // Then
         assertFalse(violations.isEmpty());
@@ -92,7 +94,7 @@ class UserDTOTest {
         userDTO.setEmail("test@example.com");
         
         // When
-        var violations = validator.validate(userDTO);
+        Set<ConstraintViolation<UserDTO>> violations = validator.validate(userDTO);
         
         // Then
         assertFalse(violations.isEmpty());
@@ -108,7 +110,7 @@ class UserDTOTest {
         userDTO.setEmail("test@example.com");
         
         // When
-        var violations = validator.validate(userDTO);
+        Set<ConstraintViolation<UserDTO>> violations = validator.validate(userDTO);
         
         // Then
         assertFalse(violations.isEmpty());
@@ -125,7 +127,7 @@ class UserDTOTest {
         userDTO.setEmail("test@example.com");
         
         // When
-        var violations = validator.validate(userDTO);
+        Set<ConstraintViolation<UserDTO>> violations = validator.validate(userDTO);
         
         // Then
         assertFalse(violations.isEmpty());
@@ -141,7 +143,7 @@ class UserDTOTest {
         userDTO.setPassword("password123");
         
         // When
-        var violations = validator.validate(userDTO);
+        Set<ConstraintViolation<UserDTO>> violations = validator.validate(userDTO);
         
         // Then
         assertFalse(violations.isEmpty());
@@ -158,7 +160,7 @@ class UserDTOTest {
         userDTO.setEmail("invalid-email");
         
         // When
-        var violations = validator.validate(userDTO);
+        Set<ConstraintViolation<UserDTO>> violations = validator.validate(userDTO);
         
         // Then
         assertFalse(violations.isEmpty());
@@ -175,7 +177,7 @@ class UserDTOTest {
         userDTO.setEmail("test@example.com");
         
         // When
-        var violations = validator.validate(userDTO);
+        Set<ConstraintViolation<UserDTO>> violations = validator.validate(userDTO);
         
         // Then
         assertTrue(violations.isEmpty());
@@ -192,7 +194,7 @@ class UserDTOTest {
         // nickname, phone, status 是可选的
         
         // When
-        var violations = validator.validate(userDTO);
+        Set<ConstraintViolation<UserDTO>> violations = validator.validate(userDTO);
         
         // Then
         assertTrue(violations.isEmpty());
