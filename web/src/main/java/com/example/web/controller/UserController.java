@@ -7,7 +7,7 @@ import com.example.service.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import java.util.List;
 
 /**
@@ -37,7 +37,7 @@ public class UserController {
      * 根据ID获取用户
      */
     @GetMapping("/{id}")
-    public Result<UserVO> getUserById(@PathVariable Long id) {
+    public Result<UserVO> getUserById(@PathVariable("id") Long id) {
         try {
             UserVO userVO = userService.getUserById(id);
             if (userVO == null) {
@@ -53,7 +53,7 @@ public class UserController {
      * 根据用户名获取用户
      */
     @GetMapping("/username/{username}")
-    public Result<UserVO> getUserByUsername(@PathVariable String username) {
+    public Result<UserVO> getUserByUsername(@PathVariable("username") String username) {
         try {
             UserVO userVO = userService.getUserByUsername(username);
             if (userVO == null) {
@@ -82,7 +82,7 @@ public class UserController {
      * 更新用户
      */
     @PutMapping("/{id}")
-    public Result<UserVO> updateUser(@PathVariable Long id, @Valid @RequestBody UserDTO userDTO) {
+    public Result<UserVO> updateUser(@PathVariable("id") Long id, @Valid @RequestBody UserDTO userDTO) {
         try {
             UserVO userVO = userService.updateUser(id, userDTO);
             return Result.success("用户更新成功", userVO);
@@ -95,7 +95,7 @@ public class UserController {
      * 删除用户
      */
     @DeleteMapping("/{id}")
-    public Result<Void> deleteUser(@PathVariable Long id) {
+    public Result<Void> deleteUser(@PathVariable("id") Long id) {
         try {
             userService.deleteUser(id);
             return Result.success("用户删除成功", null);
@@ -108,7 +108,7 @@ public class UserController {
      * 根据用户名搜索用户
      */
     @GetMapping("/search")
-    public Result<List<UserVO>> searchUsers(@RequestParam String username) {
+    public Result<List<UserVO>> searchUsers(@RequestParam("username") String username) {
         try {
             List<UserVO> users = userService.searchUsersByUsername(username);
             return Result.success(users);
@@ -121,7 +121,7 @@ public class UserController {
      * 检查用户名是否存在
      */
     @GetMapping("/check-username")
-    public Result<Boolean> checkUsername(@RequestParam String username) {
+    public Result<Boolean> checkUsername(@RequestParam("username") String username) {
         try {
             boolean exists = userService.existsByUsername(username);
             return Result.success(exists);
@@ -134,7 +134,7 @@ public class UserController {
      * 检查邮箱是否存在
      */
     @GetMapping("/check-email")
-    public Result<Boolean> checkEmail(@RequestParam String email) {
+    public Result<Boolean> checkEmail(@RequestParam("email") String email) {
         try {
             boolean exists = userService.existsByEmail(email);
             return Result.success(exists);
