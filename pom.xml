@@ -7,7 +7,7 @@
 
     <groupId>com.example</groupId>
     <artifactId>multi-springboot</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.0-jdk11-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Multi SpringBoot Project</name>
