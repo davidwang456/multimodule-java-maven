@@ -165,6 +165,7 @@ curl -X GET http://localhost:8080/api/users
 4. 统一使用 `Result` 类包装返回结果
 5. 使用 `BusinessException` 处理业务异常
 
+```xml
 <plugin>
     <groupId>org.apache.maven.plugins</groupId>
     <artifactId>maven-shade-plugin</artifactId>
@@ -183,3 +184,4 @@ curl -X GET http://localhost:8080/api/users
         </execution>
     </executions>
 </plugin>
+```
