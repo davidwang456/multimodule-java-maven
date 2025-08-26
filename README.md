@@ -163,4 +163,23 @@ curl -X GET http://localhost:8080/api/users
 2. 使用DTO进行数据传输，VO进行数据展示
 3. 在Service层处理业务逻辑，Controller层只负责参数校验和结果返回
 4. 统一使用 `Result` 类包装返回结果
-5. 使用 `BusinessException` 处理业务异常 
+5. 使用 `BusinessException` 处理业务异常
+
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-shade-plugin</artifactId>
+    <version>3.2.4</version>
+    <executions>
+        <execution>
+            <phase>package</phase>
+            <goals>
+                <goal>shade</goal>
+            </goals>
+            <configuration>
+                <!-- 这个配置是关键 -->
+                <shadedArtifactAttached>true</shadedArtifactAttached>
+                <shadedClassifierName>fat</shadedClassifierName> <!-- 定义分类器 -->
+            </configuration>
+        </execution>
+    </executions>
+</plugin>
